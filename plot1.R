@@ -1,71 +1,44 @@
+library(data.table)
 
-## -------- SETTING ---------------------------
+## ...........................................................
+# Load the data
+file.path= "C:/Users/Massimo/OneDrive/Documents/GitHub/Coursera/DataScience/Exploratory Analysis/Project1"
+data.dir= "exdata-data-household_power_consumption"
+file.name= "household_power_consumption.txt"
+data.raw= fread(input = paste(file.path,data.dir,file.name,sep="/"),
+                header = TRUE, 
+                na.strings=c("NA","N/A","","?") )
+setkey(dt.raw,Date)
+data= data.raw[Date %in% c('1/2/2007', '2/2/2007')]  # select relevant data
+# remove data.raw which is  not needed
+data.raw=  NULL
 
-# The start date of the date to analyze
-date.start <- strptime("2007-02-01","%Y-%m-%d")
+## ...........................................................
+#  Prepare the  data table for  plotting
 
-# The end date of the date to analyze 
-date.end <- strptime("2007-02-02","%Y-%m-%d")
+#  define a timestamp for all data points
+# NOTE: The following is a  hack  to transform POSIXlt to POSIXct
+#  I  am sure it  can be done better than this,  but  I have no time to look  for  a solution now
+ts= data.table(timestamp= strptime(paste(data[,Date], data[,Time]),"%d/%m/%Y %H:%M:%S"))
+data[,timestamp:= ts[,timestamp]]
+# fix the rype of the columns
+data$Date= as.Date(Date)
+data$Global_active_power=    as.numeric(data$Global_active_power)
+data$Global_reactive_power=  as.numeric(data$Global_reactive_power)
+data$Voltage=                as.numeric(data$Voltage)
+data$Sub_metering_1=         as.numeric(data$Sub_metering_1)
+data$Sub_metering_2=         as.numeric(data$Sub_metering_2)
+data$Sub_metering_3=         as.numeric(data$Sub_metering_3)
 
-#filename
-file.name <- "household_power_consumption.txt" 
+## ...........................................................
+# PLOT1
 
-
-## -------- Load data --------------------------
-#read the ddata
-data.raw <- read.csv(file = file.name, sep = ";", na.strings="?", skipNul = TRUE) 
- 
- 
-## --------- CLEAN DATA -----------------------
-
-# clean date field to make transform it in date format
-clean.date <- function(data) {
-  data.date <- data$Date
-  data.date.clean <- strptime(data.date,"%d/%m/%Y")
-  data$Date <- data.date.clean
-  data
-} 
-
-
-
-
-# extract the relevant subset
-# ideally the following should work, but it does not.  Can some of you tell me why?
-# > data.all <- subset(data.clean_date, (Date >= date.start & Date >= date.end))
-
-# Alternative
-relevant.data <- function(data, start, end) {
-  # uniform treatment of date
-  data.clean_date <- clean.date(data)
-  # extract data dated before end
-  data.before_end <- subset(data.clean_date, Date <= end)
-  # remove data before start  
-  data.relevant <- subset(data.before.end, Date >= start)
-  # return relevant data
-}
-
-# data.all stores all data that is needed for the homework
-data.all <- relevant.data(data.raw,date.start,date.end)
-
-## ------- PLOT1 ------------------------------
-
-# draw the plot on a screen device
-plot1.draw <- function () {
-  hist(data.all$Global_active_power,
-       freq=TRUE, 
-       col="red",
-       main = "Global Active Power",
-       xlab = "Global Active Power (kilowatt)")
-}
-
-# Plot1 creates a PNG file with Plot1 as requested by the homework
-plot1 <- function() {
-  # open the device
-  png(filename = "plot1.png",width = 480,height = 480)
-  # plot the graph on the device
-  plot1.draw()
-  # cloose the device
-  dev.off()
-}
-
-plot1()
+# open PNG device
+png(paste(file.path,"Plot1.png",sep="/"),width = 480,height = 480)
+#  Plot the graph
+hist(x = data$Global_active_power,
+     col = 'red',
+     main = "Global Active Power",
+     xlab = "Global Active Power (kilowatts)")
+# Close the device
+dev.off()
